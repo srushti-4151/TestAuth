@@ -67,7 +67,48 @@ export const addDish = async (req, res) => {
 
 export const getDishes = async (req, res) => {
   try {
-    const dishes = await Dish.find();
+    // const dishes = await Dish.find()
+    //   .populate("category", "name")
+    //   .populate("createdBy", "username email");
+
+    const dishes = await Dish.aggregate([
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "category",
+        },
+      },
+      {
+        $unwind: "$category",
+      },
+      {
+        $lookup: {
+          from: "users", // collection name
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdBy",
+        },
+      },
+      {
+        $unwind: "$category",
+      },
+      {
+        $project: {
+          name: 1,
+          description: 1,
+          price: 1,
+          imageUrl: 1,
+          isAvailable: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          category: "$category.name",
+          createdBy: "$createdBy.username",
+        },
+      },
+    ]);
+
     return res.status(200).json({
       success: true,
       data: dishes,
@@ -80,10 +121,8 @@ export const getDishes = async (req, res) => {
 export const updateDish = async (req, res) => {
   try {
     const { dishId } = req.params;
-    console.log("dishId : ", dishId)
-    // const { name, description, price, isAvailable, category } = req.body;
     const userId = req.user._id;
-    const updateData = {};
+    const updateData = { ...req.body };
 
     const existingDish = await Dish.findById(dishId);
 
@@ -102,16 +141,12 @@ export const updateDish = async (req, res) => {
       try {
         const uploadResult = await uploadOnCloudinary(req.file.path);
         if (!uploadResult?.url) {
-          return res.status(500).json({ success: false, message: "Cloudinary upload failed" });
+          return res
+            .status(500)
+            .json({ success: false, message: "Cloudinary upload failed" });
         }
 
-        // Only delete old imageUrl AFTER successful upload
-        // if (existingDish.imageUrl) {
-        //   await deleteFromCloudinary(existingDish.imageUrl);
-        // }
-
         updateData.imageUrl = uploadResult.url;
-        
       } catch (error) {
         // Clean up failed upload
         if (req.file.path) fs.unlinkSync(req.file.path);
@@ -121,7 +156,7 @@ export const updateDish = async (req, res) => {
 
     const updatedDish = await Dish.findByIdAndUpdate(
       dishId,
-      { $set: req.body },
+       { $set: updateData },
       {
         new: true,
         projection: { __v: 0 },
@@ -158,8 +193,8 @@ export const deleteDish = async (req, res) => {
 
     const response = await Dish.findByIdAndDelete(dishId);
 
-     if (!response) {
-      res.status(500).json({ success: false, message: "Failed  To delete"})
+    if (!response) {
+      res.status(500).json({ success: false, message: "Failed  To delete" });
     }
 
     return res.status(200).json({
@@ -168,5 +203,56 @@ export const deleteDish = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const getDishByCate = async (req, res) => {
+  try {
+    const { catId } = req.body;
+    const dishes = await Dish.aggregate([
+      {
+        $match: { category: new mongoose.Types.objectId(catId) },
+      },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "category",
+        },
+      },
+      { $unwind: "category" },
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdBy",
+        },
+      },
+      { $unwind: "$createdBy" },
+      {
+        $project: {
+          name: 1,
+          description: 1,
+          price: 1,
+          imageUrl: 1,
+          isAvailable: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          category: "$category.name",
+          chef: "$createdBy.name",
+        },
+      },
+    ]);
+    return res.status(200).json({
+      sccess: true,
+      data: dishes,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };

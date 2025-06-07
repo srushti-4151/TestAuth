@@ -10,6 +10,7 @@ cloudinary.config({
 
 export const uploadOnCloudinary = async (localFilePath) => {
   try {
+    console.log("localFilepath", localFilePath)
     if (!localFilePath) {
       console.log("uploadOnCloudinary: File path is missing");
       return null;
