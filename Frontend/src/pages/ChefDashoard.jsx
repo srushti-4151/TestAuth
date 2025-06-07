@@ -42,7 +42,7 @@ const ChefDashoard = () => {
     formData.append("price", data.price);
     formData.append("isAvailable", data.isAvailable);
     formData.append("category", data.category);
-    formData.append("imageUrl", data.imageUrl);
+    formData.append("imageUrl", data.imageUrl[0]);
 
     const res = dispatch(addDishThunk(formData));
     if (!res) {
