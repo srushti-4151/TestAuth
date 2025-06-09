@@ -15,9 +15,7 @@ export const uploadOnCloudinary = async (localFilePath) => {
       console.log("uploadOnCloudinary: File path is missing");
       return null;
     }
-    const uploadResult = await cloudinary.uploader.upload(localFilePath,{
-        resource_type: "auto",
-    })
+    const uploadResult = await cloudinary.uploader.upload(localFilePath,{resource_type: "auto",})
 
     if (!uploadResult || !uploadResult.secure_url) {
       console.error("Cloudinary upload failed:", uploadResult);

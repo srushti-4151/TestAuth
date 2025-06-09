@@ -4,11 +4,11 @@ import jwt from "jsonwebtoken";
 const generateAccessAndRefereshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
-    const accessToken = user.generateAccessToken(); //method we made in model file
-    const refreshToken = user.generateRefreshToken(); //method we made in model file
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
 
     user.refreshToken = refreshToken;
-    await user.save({ validateBeforeSave: false }); // all required filed no need bcz we only need to save rfresh token
+    await user.save({ validateBeforeSave: false }); 
 
     return { accessToken, refreshToken };
   } catch (error) {

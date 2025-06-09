@@ -8,14 +8,6 @@ export const addDish = async (req, res) => {
     const { name, description, price, imageUrl, isAvailable, category } =
       req.body;
 
-    // Ensure user is a chef
-    if (req.user.role !== "chef") {
-      return res.status(400).json({
-        success: false,
-        message: "Only chefs are allowed to add dishes",
-      });
-    }
-
     // Validate required fields
     if (!name || !price || !category) {
       return res.status(400).json({
@@ -156,7 +148,7 @@ export const updateDish = async (req, res) => {
 
     const updatedDish = await Dish.findByIdAndUpdate(
       dishId,
-       { $set: updateData },
+      { $set: updateData },
       {
         new: true,
         projection: { __v: 0 },
