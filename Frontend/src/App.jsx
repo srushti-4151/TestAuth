@@ -28,7 +28,6 @@ function App() {
 
   // const user = useSelector((state) => state.auth.user)
   // console.log("userr",user)
-  
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -67,6 +66,15 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* <Route
+          path="/chef"
+          element={
+            <ProtectedRoute allowedRoles={["chef", "manager"]}>
+              <ChefDashboard />
+            </ProtectedRoute>
+          }
+        /> */}
 
         {/* Chef */}
         <Route

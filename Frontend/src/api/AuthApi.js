@@ -43,12 +43,12 @@ api.interceptors.response.use(
 
 // This one ⬇️ is correct if you're already using the custom api instance:
 // headers: {
-//   Authorization: api.defaults.headers.common["Authorization"], // ✅ custom instance's token
+//   Authorization: api.defaults.headers.common["Authorization"], // custom instance's token
 // },
 
 // This one ⬇️ is correct if you’re getting the token from localStorage or cookies directly:
 // headers: {
-//   Authorization: `Bearer ${token}`, // ✅ manually providing token
+//   Authorization: `Bearer ${token}`, // manually providing token
 // },
 
 export const getCurrentUser = async () => {
