@@ -1,63 +1,52 @@
 import { useEffect, useState } from "react";
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import "./App.css";
-import Signup from "./components/Signup";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchCurrentUser } from "./redux/AuthSlice";
-import Login from "./components/login";
+import { fetchCurrentUser } from "./redux/AuthSlice.js";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import ChefDashboard from "./pages/ChefDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
-import ManagerDashboard from "./pages/ManagerDashboad";
-import ChefDashoad from "./pages/ChefDashoard";
-import CustomerDashboard from "./pages/CustomerDashborad";
+import Navbar from "./components/Navbar";
+import ManagerDashboard from "./pages/ManagerDashboard";
+import CustomerDashboard from "./pages/CustomerDashboard";
 
 function App() {
-  // const dispatch = useDispatch();
-
-  // useEffect(() => {
-  //   // dispatch(fetchCurrentUser()).then((res) => console.log("user fetched : ", res));
-  //   dispatch(fetchCurrentUser());
-  // }, [dispatch]);
-  // useEffect(() => {
-  //   dispatch(fetchCurrentUser())
-  //     .unwrap()
-  //     .catch((error) => {
-  //       console.log("Failed to fetch user:", error);
-  //       // Handle logout or redirect if needed
-  //     });
-  // }, [dispatch]);
-
-  // const user = useSelector((state) => state.auth.user)
-  // console.log("userr",user)
-
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { isAuthenticated, user, isLoading } = useSelector((state) => state.auth);
+
+  const location = useLocation();
 
   useEffect(() => {
     dispatch(fetchCurrentUser())
       .unwrap()
       .then((data) => {
         console.log("Fetched user:", data);
-        // Auto-redirect based on role only if not already on the target page
-        if (data?.role === "manager") navigate("/manager");
-        else if (data?.role === "chef") navigate("/chef");
-        else if (data?.role === "customer") navigate("/dashboard");
+        // Only redirect if the user is on login/signup page — not from every page
+        if (location.pathname === "/login" || location.pathname === "/signup") {
+          if (data?.role === "manager") navigate("/manager");
+          else if (data?.role === "chef") navigate("/chef");
+          else if (data?.role === "customer") navigate("/dashboard");
+        }
       })
       .catch((error) => {
         console.log("Failed to fetch user:", error);
       });
-  }, [dispatch, navigate]);
+  }, [dispatch, navigate, location.pathname]);
 
-  // const { isAuthenticated, user } = useSelector((state) => state.auth);
+  if(isLoading) return <p>Loading.....</p>
 
   return (
     <>
+      <Navbar />
       <Routes>
+        <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/" element={<Signup />} />
+        <Route path="/signup" element={<Signup />} />
 
-        {/* Manager */}
         <Route
           path="/manager"
           element={
@@ -66,27 +55,14 @@ function App() {
             </ProtectedRoute>
           }
         />
-
-        {/* <Route
-          path="/chef"
-          element={
-            <ProtectedRoute allowedRoles={["chef", "manager"]}>
-              <ChefDashboard />
-            </ProtectedRoute>
-          }
-        /> */}
-
-        {/* Chef */}
         <Route
           path="/chef"
           element={
             <ProtectedRoute allowedRoles={["chef"]}>
-              <ChefDashoad />
+              <ChefDashboard />
             </ProtectedRoute>
           }
         />
-
-        {/* Customer */}
         <Route
           path="/dashboard"
           element={

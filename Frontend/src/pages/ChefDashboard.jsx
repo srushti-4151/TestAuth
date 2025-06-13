@@ -9,11 +9,12 @@ import {
 import { getCateThunk } from "../redux/CatSlice.js";
 import { useForm } from "react-hook-form";
 
-const ChefDashoard = () => {
+const ChefDashboard = () => {
   const dispatch = useDispatch();
   const { dishes, loading } = useSelector((state) => state.dish);
   const { items } = useSelector((state) => state.cate);
   const [editId, seteditId] = useState(null);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   useEffect(() => {
     dispatch(getdish());
@@ -59,9 +60,16 @@ const ChefDashoard = () => {
     setEditValue("name", dish.name);
     setEditValue("description", dish.description);
     setEditValue("price", dish.price);
-    setEditValue("imageUrl", dish.imageUrl);
+    // setEditValue("imageUrl", dish.imageUrl);
     setEditValue("isAvailable", dish.isAvailable);
-    setEditValue("category", dish.category);
+    const matchedCategory = items.find(
+      (cat) => cat.name.toLowerCase() === dish.category.toLowerCase()
+    );
+    if (matchedCategory) {
+      setEditValue("category", matchedCategory._id);
+    } else {
+      console.warn("Category not found:", dish.category);
+    }
   };
 
   const handleUpdate = async (editId, data) => {
@@ -102,7 +110,13 @@ const ChefDashoard = () => {
 
   return (
     <>
-      <div>ChefDashoard</div>
+      <div>ChefDashboard</div>
+      <button
+        className="text-blue-500 my-4"
+        onClick={() => setShowAddForm(true)}
+      >
+        Add new Dish
+      </button>
 
       {dishes && (
         <table className="w-full border text-left">
@@ -123,13 +137,18 @@ const ChefDashoard = () => {
                 {editId === dish._id ? (
                   <>
                     <td className="p-2 border">
+                      {dish.imageUrl && (
+                        <img
+                          src={dish.imageUrl}
+                          alt="current"
+                          className="w-20 h-16 object-cover rounded mb-2"
+                        />
+                      )}
                       <input
                         type="file"
                         className="border border-black p-2 w-full mb-1"
                         accept="image/png, image/jpeg"
-                        {...editRegister("imageUrl", {
-                          required: "Image file is required",
-                        })}
+                        {...editRegister("imageUrl")}
                       />
                       {EditErrors.imageUrl && (
                         <p className="text-red-700 text-sm">
@@ -150,12 +169,12 @@ const ChefDashoard = () => {
                         </p>
                       )}
                     </td>
-
                     <td className="p-2 border">
-                      <input
-                        className="border border-black p-2 w-full mb-1"
+                      <textarea
+                        rows={3}
+                        className="border border-black max-w-xs p-2 w-full mb-1 resize-none"
                         {...editRegister("description", {
-                          required: "description is required",
+                          required: "Description is required",
                         })}
                       />
                       {EditErrors.description && (
@@ -240,22 +259,11 @@ const ChefDashoard = () => {
                       />
                     </td>
                     <td className="p-2 border">{dish.name}</td>
-                    <td className="p-2 border">{dish.description}</td>
-                    <td className="p-2 border">₹{dish.price}</td>
-                    <td className="p-2 border">
-                      {/* <select
-                  value={dish.category}
-                  disabled
-                  className="border p-1 rounded"
-                >
-                  {categories.map((cat) => (
-                    <option key={cat._id} value={cat._id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select> */}{" "}
-                      {dish.category}
+                    <td className="p-2 border whitespace-pre-line break-words max-w-xs">
+                      {dish.description}
                     </td>
+                    <td className="p-2 border">₹{dish.price}</td>
+                    <td className="p-2 border">{dish.category}</td>
                     <td className="p-2 border">
                       {dish.isAvailable ? "✅" : "❌"}
                     </td>
@@ -281,88 +289,110 @@ const ChefDashoard = () => {
         </table>
       )}
 
-      <form
-        onSubmit={handleAddSubmit(onSubmit)}
-        className="flex flex-col justify-center items-start border border-gray-600 p-4 max-w-96 mx-auto"
-      >
-        <label>Name</label>
-        <input
-          className="border border-black p-2 w-full mb-1"
-          {...addRegister("name", { required: "Dish name is required" })}
-        />
-        {addErrors.name && (
-          <p className="text-red-700 text-sm">{addErrors.name.message}</p>
-        )}
+      {showAddForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded shadow-md w-[400px]">
+            <h2 className="text-xl font-bold mb-4">Add Dish</h2>
+            {/* Add Dish Form here */}
+            <form
+              onSubmit={handleAddSubmit(onSubmit)}
+              className="flex flex-col justify-center items-start border border-gray-600 p-4 max-w-96 mx-auto"
+            >
+              <label>Name</label>
+              <input
+                className="border border-black p-2 w-full mb-1"
+                {...addRegister("name", { required: "Dish name is required" })}
+              />
+              {addErrors.name && (
+                <p className="text-red-700 text-sm">{addErrors.name.message}</p>
+              )}
 
-        <label>Description</label>
-        <input
-          className="border border-black p-2 w-full mb-1"
-          {...addRegister("description", {
-            required: "description is required",
-          })}
-        />
-        {addErrors.description && (
-          <p className="text-red-700 text-sm">
-            {addErrors.description.message}
-          </p>
-        )}
+              <label>Description</label>
+              <input
+                className="border border-black p-2 w-full mb-1"
+                {...addRegister("description", {
+                  required: "description is required",
+                })}
+              />
+              {addErrors.description && (
+                <p className="text-red-700 text-sm">
+                  {addErrors.description.message}
+                </p>
+              )}
 
-        <label>price</label>
-        <input
-          className="border border-black p-2 w-full mb-1"
-          type="number"
-          {...addRegister("price", { required: "price is required" })}
-        />
-        {addErrors.price && (
-          <p className="text-red-700 text-sm">{addErrors.price.message}</p>
-        )}
-        <label>Image</label>
-        <input
-          type="file"
-          className="border border-black p-2 w-full mb-1"
-          accept="image/png, image/jpeg"
-          {...addRegister("imageUrl", {
-            required: "Image file is required",
-          })}
-        />
-        {addErrors.imageUrl && (
-          <p className="text-red-700 text-sm">{addErrors.imageUrl.message}</p>
-        )}
+              <label>price</label>
+              <input
+                className="border border-black p-2 w-full mb-1"
+                type="number"
+                {...addRegister("price", { required: "price is required" })}
+              />
+              {addErrors.price && (
+                <p className="text-red-700 text-sm">
+                  {addErrors.price.message}
+                </p>
+              )}
+              <label>Image</label>
+              <input
+                type="file"
+                className="border border-black p-2 w-full mb-1"
+                accept="image/png, image/jpeg"
+                {...addRegister("imageUrl", {
+                  required: "Image file is required",
+                })}
+              />
+              {addErrors.imageUrl && (
+                <p className="text-red-700 text-sm">
+                  {addErrors.imageUrl.message}
+                </p>
+              )}
 
-        <label>Is Available</label>
-        <select
-          {...addRegister("isAvailable")}
-          className="border border-black p-1 mb-1"
-        >
-          <option value={true}>Available</option>
-          <option value={false}>Not Available</option>
-        </select>
+              <label>Is Available</label>
+              <select
+                {...addRegister("isAvailable")}
+                className="border border-black p-1 mb-1"
+              >
+                <option value={true}>Available</option>
+                <option value={false}>Not Available</option>
+              </select>
 
-        <label>Category</label>
-        <select
-          className="border border-black p-1 mb-1"
-          {...addRegister("category", { required: "Category is required" })}
-        >
-          <option value="">Select category</option>
-          {items.map((cat) => (
-            <option key={cat._id} value={cat._id}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
-        {addErrors.category && (
-          <p className="text-red-700 text-sm">{addErrors.category.message}</p>
-        )}
+              <label>Category</label>
+              <select
+                className="border border-black p-1 mb-1"
+                {...addRegister("category", {
+                  required: "Category is required",
+                })}
+              >
+                <option value="">Select category</option>
+                {items.map((cat) => (
+                  <option key={cat._id} value={cat._id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+              {addErrors.category && (
+                <p className="text-red-700 text-sm">
+                  {addErrors.category.message}
+                </p>
+              )}
 
-        <button
-          type="submit"
-          className="bg-blue-500 text-white px-3 py-1 rounded"
-        >
-          Submit
-        </button>
-      </form>
+              <button
+                type="submit"
+                className="bg-blue-500 text-white px-3 py-1 rounded"
+              >
+                Submit
+              </button>
+            </form>
+            <button
+              className="text-red-500 mt-4"
+              onClick={() => setShowAddForm(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 };
 
-export default ChefDashoard;
+export default ChefDashboard;

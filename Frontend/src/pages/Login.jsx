@@ -2,10 +2,12 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "../redux/AuthSlice.js";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const { register, handleSubmit } = useForm();
   const dispatch = useDispatch();
+  const navigate = useNavigate()
   const { loading, error } = useSelector((state) => state.auth);
 
   const onSubmit = (data) => {
@@ -18,7 +20,14 @@ const Login = () => {
         email: identifier,
         password,
       })
-    );
+    ).unwrap()
+    .then((res) => {
+         console.log("yess", res);
+      navigate("/");
+    })
+    .catch((err) => {
+      console.log("Login failed:", err);
+    });
   };
 
   return (

@@ -5,6 +5,7 @@ import {
   logout,
   getCurrentUser,
   refreshToken,
+  register,
 } from "../api/AuthApi.js";
 
 export const refreshAuthToken = createAsyncThunk(
@@ -75,6 +76,15 @@ export const logoutUser = createAsyncThunk(
   }
 );
 
+export const registerUser = createAsyncThunk(
+  "auth/register",
+  async (userData, thunkAPI) => {
+    const response = await register(userData); // Calls the API function
+    if (!response.success) return thunkAPI.rejectWithValue(response.message); // If error, send it to Redux state
+    return response.data; // Otherwise, return the user data to store it in Redux state
+  }
+);
+
 
 const initialState = {
   isAuthenticated: false,
@@ -135,6 +145,22 @@ const authSlice = createSlice({
         state.user = null;
         state.token = null;
         state.isLoading = false;
+        state.error = "Failed to authenticate user";
+      })
+
+      //regi
+      .addCase(registerUser.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+
+      .addCase(registerUser.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.error = null;
+      })
+      .addCase(registerUser.rejected, (state) => {
+        state.isAuthenticated = false;
+        state.isLoading= false,
         state.error = "Failed to authenticate user";
       })
 

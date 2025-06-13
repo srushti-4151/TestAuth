@@ -103,6 +103,21 @@ export const login = async (userData) => {
   }
 };
 
+export const register = async (data) => {
+  try{
+    const response = await axios.post(`${API_URL}/register`, data, {
+      withCredentials: true,
+    });
+    console.log("register", response.data);
+    return response.data;
+  }catch(err){
+    return{
+      success:false,
+      message: err.response?.data?.message || "error in register"
+    }
+  }
+}
+
 export const logout = async () => {
   try {
     await axios.post(

@@ -118,6 +118,7 @@ export const registerUser = async (req, res) => {
     }
 
     return res.status(200).json({
+      success: true,
       message: "User registered successfully",
       data: createdUser,
     });
