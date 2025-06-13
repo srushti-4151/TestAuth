@@ -15,7 +15,7 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     if (originalRequest.url.includes("/refresh-token")) {
-      console.log("Refresh token failed, loggin out...");
+      // console.log("Refresh token failed, loggin out...");
       return Promise.reject(error);
     }
 
@@ -23,17 +23,17 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        console.log("Token expired, refreshing token...");
+        // console.log("Token expired, refreshing token...");
         const newToken = await refreshToken();
         if (newToken) {
-          console.log("Token refreshed, retrying original request...");
+          // console.log("Token refreshed, retrying original request...");
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
           return api(originalRequest);
         }
-        console.log("Token refresh failed, rejecting request...");
+        // console.log("Token refresh failed, rejecting request...");
         return Promise.reject(error);
       } catch (refreshError) {
-        console.log("Token refresh error: ", refreshError);
+        // console.log("Token refresh error: ", refreshError);
         return Promise.reject(refreshError);
       }
     }
@@ -41,12 +41,12 @@ api.interceptors.response.use(
   }
 );
 
-// This one ⬇️ is correct if you're already using the custom api instance:
-// headers: {
+// This one : is correct if you're already using the custom api instance:
+// headers: 
 //   Authorization: api.defaults.headers.common["Authorization"], // custom instance's token
 // },
 
-// This one ⬇️ is correct if you’re getting the token from localStorage or cookies directly:
+// This one : is correct if you’re getting the token from localStorage or cookies directly:
 // headers: {
 //   Authorization: `Bearer ${token}`, // manually providing token
 // },
@@ -64,7 +64,8 @@ export const getCurrentUser = async () => {
     console.log("Api getCurrentuser resposne", response);
     return response.data;
   } catch (error) {
-    return null; // No user logged in
+     console.log(error)
+    return null; 
   }
 };
 

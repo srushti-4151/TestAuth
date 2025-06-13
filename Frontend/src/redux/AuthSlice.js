@@ -24,6 +24,7 @@ export const refreshAuthToken = createAsyncThunk(
 
       return newToken;
     } catch (error) {
+      console.log(error)
       return thunkAPI.rejectWithValue("Token refresh failed");
     }
   }
@@ -48,7 +49,7 @@ export const fetchCurrentUser = createAsyncThunk(
             return await getCurrentUser(); // Retry fetching user
           }
         } catch (refreshError) {
-          // console.log("Token refresh failed:", refreshError);
+          console.log("Token refresh failed:", refreshError);
           return thunkAPI.rejectWithValue("Token refresh failed");
         }
       }
@@ -89,8 +90,7 @@ export const registerUser = createAsyncThunk(
 const initialState = {
   isAuthenticated: false,
   user: null,
-  userChannelProfile: null,
-  token: null,
+  // token: null,
   isLoading: false,
   error: null,
 };
@@ -114,8 +114,6 @@ const authSlice = createSlice({
         state.isLoading = false;
         // console.log("Access Token from Redux:", action.payload.data.accessToken);
         
-        // Ensure token is set globally in Axios
-        // Hey, for every future request made using this api instance, include this Authorization header."
         api.defaults.headers.common["Authorization"] = `Bearer ${action.payload.data.accessToken}`;
         console.log("Set Authorization Header:", api.defaults.headers.common["Authorization"]);
       })
@@ -154,7 +152,7 @@ const authSlice = createSlice({
         state.error = null;
       })
 
-      .addCase(registerUser.fulfilled, (state, action) => {
+      .addCase(registerUser.fulfilled, (state) => {
         state.isLoading = false;
         state.error = null;
       })
@@ -171,8 +169,6 @@ const authSlice = createSlice({
         state.error = null;
         
         api.defaults.headers.common["Authorization"] = `Bearer ${action.payload}`;
-        // **Fix: Ensure token is updated globally**
-        // api.defaults.headers.common["Authorization"] = `Bearer ${action.payload}`;
       })
       
       .addCase(refreshAuthToken.rejected, (state) => {
@@ -193,7 +189,6 @@ const authSlice = createSlice({
         state.token = null;
         state.isLoading = false;
         state.error = null;
-
         delete api.defaults.headers.common["Authorization"]; 
       })
       .addCase(logoutUser.rejected, (state, action) => {

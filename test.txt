@@ -1,0 +1,496 @@
+import axios from "axios";
+//ApiSliceAppProNav
+
+const API_URL = "http://localhost:8000/api/v1/users";
+
+export const api = axios.create({
+  baseURL: API_URL,
+  withCredentials: true,
+});
+
+api.interceptors.response.use(
+  (response) => response,
+
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (originalRequest.url.includes("/refresh-token")) {
+      return Promise.reject(error);
+    }
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        const newToken = await refreshToken();
+        if (newToken) {
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return api(originalRequest);
+        }
+        return Promise.reject(error);
+      } catch (refreshError) {
+        return Promise.reject(refreshError);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+export const getCurrentUser = async () => {
+  try {
+    const response = await api.get(`/current-user`);
+    console.log("Api getCurrentuser resposne", response);
+    return response.data;
+  } catch (error) {
+     console.log(error)
+    return null; 
+  }
+};
+
+// Refresh Token Function
+export const refreshToken = async () => {
+  try {
+    const res = await api.post("/refresh-token");
+    const newAccessToken = res.data?.data?.accessToken;
+
+    if (newAccessToken) {
+      api.defaults.headers.common["Authorization"] = `Bearer ${newAccessToken}`;
+      return newAccessToken;
+    }
+    return false;
+  } catch (error) {
+    console.error("Refresh token request failed:", error);
+    return false;
+  }
+};
+
+// Login API
+export const login = async (userData) => {
+  try {
+    const response = await axios.post(`${API_URL}/login`, userData, {
+      withCredentials: true, 
+    });
+    console.log("loginnnnnnnn", response.data);
+    return response.data;
+  } catch (error) {
+    return {
+      success: false,
+      message: error.response?.data?.message || "An error occurred",
+    };
+  }
+};
+
+export const register = async (data) => {
+  try{
+    const response = await axios.post(`${API_URL}/register`, data, {
+      withCredentials: true,
+    });
+    console.log("register", response.data);
+    return response.data;
+  }catch(err){
+    return{
+      success:false,
+      message: err.response?.data?.message || "error in register"
+    }
+  }
+}
+
+export const logout = async () => {
+  try {
+    await axios.post(
+      `${API_URL}/logout`,
+      {},
+      {
+        withCredentials: true,
+        headers: {
+          Authorization: api.defaults.headers.common["Authorization"],
+        },
+      }
+    );
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.response?.data?.message || "An error occurred",
+    };
+  }
+};
+
+
+
+
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import {
+  api,
+  login,
+  logout,
+  getCurrentUser,
+  refreshToken,
+  register,
+} from "../api/AuthApi.js";
+
+export const refreshAuthToken = createAsyncThunk(
+  "auth/refreshToken",
+  async (_, thunkAPI) => {
+    try {
+      // console.log("caling the refreshAuthToken :");
+      const newToken = await refreshToken(); // Call API to refresh
+
+      if (!newToken) {
+        return thunkAPI.rejectWithValue("Token refresh failed");
+      }
+
+      // Set new token for future requests
+      api.defaults.headers.common["Authorization"] = `Bearer ${newToken}`;
+
+      return newToken;
+    } catch (error) {
+      console.log(error)
+      return thunkAPI.rejectWithValue("Token refresh failed");
+    }
+  }
+);
+
+export const fetchCurrentUser = createAsyncThunk(
+  "auth/fetchCurrentUser",
+  async (_, thunkAPI) => {
+    try {
+      // console.log("Fetching current user...");
+      const response = await getCurrentUser();
+      console.log("Current user response:", response.data);
+      if (response) return response.data;
+    } catch (error) { // handle the error before the Axios interceptor gets a chance to handle it.
+       // Manually refreshing token
+      if (error.response?.status === 401) {
+        // console.log("Token expired, attempting to refresh...");
+        try {
+          const newToken = await thunkAPI.dispatch(refreshAuthToken()).unwrap();
+          if (newToken) {
+            // console.log("Token refreshed, retrying fetchCurrentUser...");
+            return await getCurrentUser(); // Retry fetching user
+          }
+        } catch (refreshError) {
+          console.log("Token refresh failed:", refreshError);
+          return thunkAPI.rejectWithValue("Token refresh failed");
+        }
+      }
+    }
+    return thunkAPI.rejectWithValue("Failed to fetch user");
+  }
+);
+
+export const loginUser = createAsyncThunk(
+  "auth/login",
+  async (userData, thunkAPI) => {
+    console.log("authhslice: dat:", userData)
+    const response = await login(userData); // Calls the API function
+    if (!response.success) return thunkAPI.rejectWithValue(response.message); // If error, send it to Redux state
+    return response; // Otherwise, return the user data to store it in Redux state
+  }
+);
+
+export const logoutUser = createAsyncThunk(
+  "auth/logout",
+  async (_, thunkAPI) => {
+    const response = await logout();
+    if (!response.success) return thunkAPI.rejectWithValue(response.message);
+    return null; // Clears user state
+  }
+);
+
+export const registerUser = createAsyncThunk(
+  "auth/register",
+  async (userData, thunkAPI) => {
+    const response = await register(userData); // Calls the API function
+    if (!response.success) return thunkAPI.rejectWithValue(response.message); // If error, send it to Redux state
+    return response.data; // Otherwise, return the user data to store it in Redux state
+  }
+);
+
+const initialState = {
+  isAuthenticated: false,
+  user: null,
+  // token: null,
+  isLoading: false,
+  error: null,
+};
+
+const authSlice = createSlice({
+  name: "auth",
+  initialState,
+  reducers: {},
+
+  extraReducers: (builder) => {
+    builder
+      // Login Cases
+      .addCase(loginUser.pending, (state) => {
+        state.isLoading = true;
+        state.error = null; // Clear previous error before making a new request
+      })
+      .addCase(loginUser.fulfilled, (state, action) => {
+        state.isAuthenticated = true;
+        state.user = action.payload.data.user;
+        state.token = action.payload.data.accessToken;
+        state.isLoading = false;
+        // console.log("Access Token from Redux:", action.payload.data.accessToken);
+        
+        api.defaults.headers.common["Authorization"] = `Bearer ${action.payload.data.accessToken}`;
+        console.log("Set Authorization Header:", api.defaults.headers.common["Authorization"]);
+      })
+      .addCase(loginUser.rejected, (state, action) => {
+        state.isAuthenticated = false;
+        state.user = null;
+        state.token = null;
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+
+      
+      // Fetch Current User
+      .addCase(fetchCurrentUser.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+
+      .addCase(fetchCurrentUser.fulfilled, (state, action) => {
+        state.isAuthenticated = true;
+        state.user = action.payload;
+        state.isLoading = false;
+        state.error = null;
+      })
+      .addCase(fetchCurrentUser.rejected, (state) => {
+        state.isAuthenticated = false;
+        state.user = null;
+        state.token = null;
+        state.isLoading = false;
+        state.error = "Failed to authenticate user";
+      })
+
+      //regi
+      .addCase(registerUser.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+
+      .addCase(registerUser.fulfilled, (state) => {
+        state.isLoading = false;
+        state.error = null;
+      })
+      .addCase(registerUser.rejected, (state) => {
+        state.isAuthenticated = false;
+        state.isLoading= false,
+        state.error = "Failed to authenticate user";
+      })
+
+      // Refresh Token
+      .addCase(refreshAuthToken.fulfilled, (state, action) => {
+        state.token = action.payload;
+        state.isAuthenticated = true;
+        state.error = null;
+        
+        api.defaults.headers.common["Authorization"] = `Bearer ${action.payload}`;
+      })
+      
+      .addCase(refreshAuthToken.rejected, (state) => {
+        state.isAuthenticated = false;
+        state.user = null;
+        state.token = null;
+        state.error = "Token refresh failed";
+      })
+
+      // Logout
+      .addCase(logoutUser.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.isAuthenticated = false;
+        state.user = null;
+        state.token = null;
+        state.isLoading = false;
+        state.error = null;
+        delete api.defaults.headers.common["Authorization"]; 
+      })
+      .addCase(logoutUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload?.message || "Logout failed";
+      })
+    },
+});
+
+export default authSlice.reducer;
+
+
+
+
+
+import { useEffect, useState } from "react";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import "./App.css";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchCurrentUser } from "./redux/AuthSlice.js";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import ChefDashboard from "./pages/ChefDashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Navbar from "./components/Navbar";
+import ManagerDashboard from "./pages/ManagerDashboard";
+import CustomerDashboard from "./pages/CustomerDashboard";
+
+function App() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const { isAuthenticated, user, isLoading } = useSelector((state) => state.auth);
+
+  const location = useLocation();
+
+  useEffect(() => {
+    dispatch(fetchCurrentUser())
+      .unwrap()
+      .then((data) => {
+        console.log("Fetched user:", data);
+        // Only redirect if the user is on login/signup page — not from every page
+        if (location.pathname === "/login" || location.pathname === "/signup") {
+          if (data?.role === "manager") navigate("/manager");
+          else if (data?.role === "chef") navigate("/chef");
+          else if (data?.role === "customer") navigate("/dashboard");
+        }
+      })
+      .catch((error) => {
+        console.log("Failed to fetch user:", error);
+      });
+  }, [dispatch, navigate, location.pathname]);
+
+  if(isLoading) return <p>Loading.....</p>
+
+  return (
+    <>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+
+        <Route
+          path="/manager"
+          element={
+            <ProtectedRoute allowedRoles={["manager"]}>
+              <ManagerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chef"
+          element={
+            <ProtectedRoute allowedRoles={["chef"]}>
+              <ChefDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["customer"]}>
+              <CustomerDashboard />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </>
+  );
+}
+
+export default App;
+
+
+
+
+
+import { useSelector } from "react-redux";
+import { Navigate } from "react-router-dom";
+
+const ProtectedRoute = ({ allowedRoles, children }) => {
+  const { user, isLoading } = useSelector((state) => state.auth);
+
+  if(isLoading) return <p>Loading.....</p>
+
+  if (!user || !allowedRoles.includes(user.role)) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+};
+
+export default ProtectedRoute;
+
+
+
+import React from 'react'
+import { Link, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { logoutUser } from '../redux/AuthSlice.js';
+
+const Navbar = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+
+  const handleLogout = () => {
+    dispatch(logoutUser()); // Your logout action
+    navigate("/login");
+  };
+
+  const getDashboardPath = () => {
+    if (!user) return "/";
+    console.log("ROLE : ", user.role)
+    if (user.role === "manager") return "/manager";
+    if (user.role === "chef") return "/chef";
+    return "/dashboard";
+  };
+
+  return (
+    <nav className="bg-gray-900 text-white px-6 py-3 flex items-center justify-between shadow-md">
+      <Link to="/" className="text-xl font-bold">
+        MyApp
+      </Link>
+
+      <div className="flex items-center gap-4">
+        <Link to="/" className="hover:text-gray-300">
+          Home
+        </Link>
+
+        {!isAuthenticated && (
+          <>
+            <Link to="/login" className="hover:text-gray-300">
+              Login
+            </Link>
+            <Link to="/signup" className="hover:text-gray-300">
+              Signup
+            </Link>
+          </>
+        )}
+
+        {isAuthenticated && (
+          <>
+            <Link to={getDashboardPath()} className="hover:text-gray-300">
+              Dashboard
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="bg-red-600 px-3 py-1 rounded hover:bg-red-700 transition"
+            >
+              Logout
+            </button>
+          </>
+        )}
+      </div>
+    </nav>
+  );
+};
+
+export default Navbar;
+
+
