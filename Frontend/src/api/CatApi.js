@@ -1,4 +1,3 @@
-import { data } from "react-router-dom";
 import { api } from "./AuthApi.js";
 
 const CAT_URL = "http://localhost:8000/api/v1/category";

@@ -42,7 +42,7 @@ api.interceptors.response.use(
 );
 
 // This one : is correct if you're already using the custom api instance:
-// headers: 
+// headers: {
 //   Authorization: api.defaults.headers.common["Authorization"], // custom instance's token
 // },
 
@@ -64,8 +64,8 @@ export const getCurrentUser = async () => {
     console.log("Api getCurrentuser resposne", response);
     return response.data;
   } catch (error) {
-     console.log(error)
-    return null; 
+    console.log(error);
+    return null;
   }
 };
 
@@ -105,32 +105,23 @@ export const login = async (userData) => {
 };
 
 export const register = async (data) => {
-  try{
+  try {
     const response = await axios.post(`${API_URL}/register`, data, {
       withCredentials: true,
     });
     console.log("register", response.data);
     return response.data;
-  }catch(err){
-    return{
-      success:false,
-      message: err.response?.data?.message || "error in register"
-    }
+  } catch (err) {
+    return {
+      success: false,
+      message: err.response?.data?.message || "error in register",
+    };
   }
-}
+};
 
 export const logout = async () => {
   try {
-    await axios.post(
-      `${API_URL}/logout`,
-      {},
-      {
-        withCredentials: true,
-        headers: {
-          Authorization: api.defaults.headers.common["Authorization"],
-        },
-      }
-    );
+    await api.post("/logout");
     return { success: true };
   } catch (error) {
     return {

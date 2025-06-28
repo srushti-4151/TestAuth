@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { addCat, deleteCate, getCate, updateCate } from "../api/catApi.js";
+import { addCat, deleteCate, getCate, updateCate } from "../api/CatApi.js";
 
 export const addCateThunk = createAsyncThunk(
   "category/add",

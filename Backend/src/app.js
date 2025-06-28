@@ -20,12 +20,10 @@ app.use(express.static("public"))
 app.use(cookieParser())
 
 import userRouter from "./routes/user.routes.js";
-import managerRouter from "./routes/manager.routes.js"
 import catgoryRouter from "./routes/categories.routes.js"
 import dishRouter from "./routes/dish.routes.js"
 
 app.use("/api/v1/users", userRouter)
-app.use("/api/v1/manager", managerRouter)
 app.use("/api/v1/category", catgoryRouter)
 app.use("/api/v1/dish", dishRouter)
 

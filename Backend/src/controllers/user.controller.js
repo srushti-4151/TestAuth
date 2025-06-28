@@ -8,7 +8,7 @@ const generateAccessAndRefereshTokens = async (userId) => {
     const refreshToken = user.generateRefreshToken();
 
     user.refreshToken = refreshToken;
-    await user.save({ validateBeforeSave: false }); 
+    await user.save({ validateBeforeSave: false });
 
     return { accessToken, refreshToken };
   } catch (error) {
@@ -86,7 +86,8 @@ export const registerUser = async (req, res) => {
     const { email, username, password, role } = req.body;
     if (!email?.trim() || !username?.trim() || !password?.trim()) {
       return res.status(400).json({
-        error: "All fields (email, username, password) are required.",
+        success: false,
+        message: "All fields are required",
       });
     }
 
