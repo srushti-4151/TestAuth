@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 const Login = () => {
   const { register, handleSubmit } = useForm();
   const dispatch = useDispatch();
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const { loading, error } = useSelector((state) => state.auth);
 
   const onSubmit = (data) => {
@@ -20,14 +20,15 @@ const Login = () => {
         email: identifier,
         password,
       })
-    ).unwrap()
-    .then((res) => {
-         console.log("yess", res);
-      navigate("/");
-    })
-    .catch((err) => {
-      console.log("Login failed:", err);
-    });
+    )
+      .unwrap()
+      .then((res) => {
+        console.log("yess", res);
+        navigate("/");
+      })
+      .catch((err) => {
+        console.log("Login failed:", err);
+      });
   };
 
   return (
@@ -39,15 +40,14 @@ const Login = () => {
           <input
             type="text"
             placeholder="Username or Email"
-            // {...register("username")}
-            {...register("identifier", { required: true })}
+            {...register("identifier", { required: "username required" })}
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
 
           <input
             type="password"
             placeholder="Password"
-            {...register("password")}
+            {...register("password", { required: "password required" })}
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
 

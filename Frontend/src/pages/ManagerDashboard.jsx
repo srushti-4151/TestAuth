@@ -14,14 +14,6 @@ const ManagerDashboard = () => {
   const [editId, setEditId] = useState(null);
   const [showAddModel, setShowAddModel] = useState(false);
 
-  // const {
-  //   register,
-  //   handleSubmit,
-  //   reset,
-  //   setValue,
-  //   formState: { errors },
-  // } = useForm();
-
   const {
     register: addRegister,
     handleSubmit: handleAddSubmit,
@@ -37,16 +29,18 @@ const ManagerDashboard = () => {
     formState: { errors: editErrors },
   } = useForm();
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     console.log("cat form data: ", data);
-    const res = dispatch(addCateThunk(data));
-    if (!res) {
-      alert("error");
-      return;
+
+    try {
+      await dispatch(addCateThunk(data)).unwrap();
+      alert("Category added successfully!");
+      resetAdd();
+      dispatch(getCateThunk()); 
+    } catch (error) {
+      console.log("Add category error:", error);
+      alert(error?.message || "Failed to add category");
     }
-    alert("cateory added successfully !");
-    resetAdd();
-    return;
   };
 
   useEffect(() => {
@@ -60,27 +54,29 @@ const ManagerDashboard = () => {
   };
 
   const handleUpdate = async (editId, data) => {
-    console.log("updaate cate data:", data);
-    console.log("editId cate :", editId);
-
-    const res = await dispatch(updateCateThunk({ id: editId, data }));
-    if (!res) {
-      alert("error");
-      return;
+    try {
+      const res = await dispatch(
+        updateCateThunk({ id: editId, data })
+      ).unwrap();
+      alert("Category updated successfully!");
+      setEditId(null);
+      resetEdit();
+      dispatch(getCateThunk());
+    } catch (error) {
+      console.log("Update error:", error);
+      alert(error?.message || "Failed to update category");
     }
-    alert("cate updated");
-    setEditId(null);
-    dispatch(getCateThunk());
-    resetEdit();
-    return;
   };
 
   const handleDelete = async (cateId) => {
-    const res = await dispatch(deleteCateThunk(cateId));
-    if (!res) {
-      return;
+    try {
+      await dispatch(deleteCateThunk(cateId)).unwrap();
+      alert("Category deleted successfully!");
+      dispatch(getCateThunk());
+    } catch (error) {
+      console.log("Delete error:", error);
+      alert(error?.message || "Failed to delete category");
     }
-    dispatch(getCateThunk());
   };
 
   if (loading) return <p>Loading...</p>;
@@ -160,7 +156,9 @@ const ManagerDashboard = () => {
                 ) : (
                   <>
                     <td className="p-2 border">{cat.name}</td>
-                    <td className="p-2 border whitespace-pre-line break-words max-w-xs">{cat.description}</td>
+                    <td className="p-2 border whitespace-pre-line break-words max-w-xs">
+                      {cat.description}
+                    </td>
                     <td className="p-2 border space-x-2">
                       <button
                         className="bg-yellow-500 text-white px-2 py-1 rounded"

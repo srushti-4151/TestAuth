@@ -55,17 +55,17 @@ export const refreshAccessToken = async (req, res) => {
     user.refreshToken = null;
     await user.save({ validateBeforeSave: false });
 
+    
+    // Generate new tokens
+    const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
+      user._id
+    );
+    
     const options = {
       httpOnly: true,
       secure: true,
       sameSite: "none",
     };
-
-    // Generate new tokens
-    const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
-      user._id
-    );
-
     return res.status(200).cookie("refreshToken", refreshToken, options).json({
       success: true,
       message: "Access token refreshed successfully",

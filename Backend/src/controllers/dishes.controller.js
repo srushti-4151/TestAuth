@@ -201,9 +201,14 @@ export const deleteDish = async (req, res) => {
 export const getDishByCate = async (req, res) => {
   try {
     const { catId } = req.body;
+
+    // const dishes = await Dish.find({ category: catId })
+    //   .populate("category", "name")
+    //   .populate("createdBy", "username email");
+
     const dishes = await Dish.aggregate([
       {
-        $match: { category: new mongoose.Types.objectId(catId) },
+        $match: { category: new mongoose.Types.ObjectId(catId) },
       },
       {
         $lookup: {
